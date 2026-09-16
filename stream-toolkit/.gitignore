@@ -1,6 +1,0 @@
-# Never commit your real config — it has API tokens
-config.js
-
-# OS junk
-.DS_Store
-Thumbs.db
