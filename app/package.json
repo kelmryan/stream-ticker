@@ -1,0 +1,26 @@
+{
+  "name": "stream-ticker-app",
+  "version": "1.0.0",
+  "description": "ESPN-style stream ticker — hosted web app with Twitch OAuth",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "migrate": "node server/db/migrate.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "pg": "^8.13.0",
+    "connect-pg-simple": "^10.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "crypto": "^1.0.1",
+    "helmet": "^8.0.0",
+    "cors": "^2.8.5",
+    "ejs": "^3.1.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
