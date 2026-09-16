@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Ticker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="connection-dot" title="Socket status"></div>
+
+  <div id="ticker-bar">
+    <div id="category-label">LOADING...</div>
+    <div id="scroll-area">
+      <div id="scroll-content">
+        <span id="loading-msg">Connecting...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* Injected by server */
+    const TICKER_CONFIG = <%- config %>;
+    const TWITCH_TOKEN = '<%= accessToken %>';
+
+    const C = TICKER_CONFIG;
+    const T = C.ticker;
+
+    /* ---- Dynamic Styles ---- */
+    (function applyStyles() {
+      const s = document.createElement('style');
+      s.textContent = `
+        #ticker-bar {
+          position: fixed; bottom: 0; left: 0; width: 100%;
+          height: ${T.barHeight}px;
+          background: linear-gradient(180deg, ${T.bgColorLight || '#1a1a1a'} 0%, ${T.bgColor} 100%);
+          border-top: 2px solid ${T.accentColor};
+          display: flex; align-items: center; overflow: hidden; z-index: 9999;
+        }
+        #category-label {
+          flex-shrink: 0; height: 100%;
+          display: flex; align-items: center; padding: 0 16px;
+          background: linear-gradient(135deg, ${T.accentColor} 0%, ${T.accentColorDark} 100%);
+          color: #000; font-size: ${T.fontSizeLabel || 16}px;
+          font-weight: 800; text-transform: uppercase;
+          letter-spacing: 1.2px; white-space: nowrap;
+          min-width: 200px; justify-content: center;
+          position: relative; z-index: 2;
+        }
+        #category-label::after {
+          content: ''; position: absolute; right: -16px; top: 0;
+          border-top: ${T.barHeight / 2}px solid transparent;
+          border-bottom: ${T.barHeight / 2}px solid transparent;
+          border-left: 16px solid ${T.accentColorDark};
+        }
+        #scroll-area {
+          flex-grow: 1; height: 100%; overflow: hidden;
+          position: relative; margin-left: 8px;
+        }
+        #scroll-content {
+          display: flex; align-items: center; height: 100%;
+          position: absolute; white-space: nowrap; will-change: transform;
+        }
+        .entry { display: inline-flex; align-items: center; margin-right: 12px; height: 100%; }
+        .entry-rank { color: ${T.accentColor}; font-size: ${T.fontSizeRank || 16}px; font-weight: 800; margin-right: 4px; }
+        .entry-name { color: ${T.textColor}; font-size: ${T.fontSizeName}px; font-weight: 600; }
+        .entry-detail { color: ${T.detailColor || '#AAA'}; font-size: ${T.fontSizeDetail || 14}px; font-weight: 600; margin-left: 4px; }
+        .entry-separator { color: ${T.separatorColor || '#555'}; font-size: 18px; margin: 0 10px; }
+        #loading-msg { color: ${T.accentColor}; font-size: ${T.fontSizeLabel || 16}px; font-weight: 600; padding-left: 24px; display: flex; align-items: center; height: 100%; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #connection-dot {
+          position: fixed; bottom: ${T.barHeight + 4}px; right: 10px;
+          width: 10px; height: 10px; border-radius: 50%;
+          background: #555; z-index: 10000; transition: background 0.3s;
+          display: ${T.showConnectionDot ? 'block' : 'none'};
+        }
+        #connection-dot.connected { background: #00FF00; }
+        #connection-dot.disconnected { background: #FF0000; }
+      `;
+      document.head.appendChild(s);
+    })();
+
+    /* ---- State ---- */
+    const TWITCH_API = 'https://api.twitch.tv/helix';
+    const EXTRALIFE_API = 'https://dd.extra-life.org/api';
+    const STORAGE_KEY = 'stream_ticker_data';
+    let currentCategoryIndex = 0;
+    let scrollAnimationId = null;
+
+    let lists = { followers: [], subscribers: [], cheers: [], extralife: [] };
+
+    function buildCategoryMap() {
+      const cats = [
+        { key: 'followers', label: 'Latest Followers' },
+        { key: 'subscribers', label: 'Latest Subscribers' },
+        { key: 'cheers', label: 'Top Cheers' },
+      ];
+      if (C.extraLife && C.extraLife.enabled) {
+        cats.push({ key: 'extralife', label: 'Extra Life Donations' });
+      }
+      return cats;
+    }
+
+    const CATEGORY_MAP = buildCategoryMap();
+
+    /* ---- LocalStorage ---- */
+    function saveToStorage() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ followers: lists.followers, subscribers: lists.subscribers, cheers: lists.cheers })); } catch(e) {}
+    }
+    function loadFromStorage() {
+      try {
+        const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (d) { if (d.followers) lists.followers = d.followers; if (d.subscribers) lists.subscribers = d.subscribers; if (d.cheers) lists.cheers = d.cheers; }
+      } catch(e) {}
+    }
+
+    /* ---- List Helper ---- */
+    function prependToList(key, entry) {
+      const list = lists[key];
+      if (list.some(e => e.name.toLowerCase() === entry.name.toLowerCase())) return;
+      list.unshift(entry);
+      if (list.length > T.maxEntries) list.length = T.maxEntries;
+      saveToStorage();
+    }
+
+    /* ---- Twitch API ---- */
+    function twitchHeaders() {
+      return { 'Client-ID': C.twitchClientId, 'Authorization': 'Bearer ' + TWITCH_TOKEN };
+    }
+
+    async function seedFollowers() {
+      try {
+        const res = await fetch(TWITCH_API + '/channels/followers?broadcaster_id=' + C.broadcasterId + '&first=' + T.maxEntries, { headers: twitchHeaders() });
+        const data = await res.json();
+        const f = (data.data || []).map(f => ({ name: f.user_name, detail: '' }));
+        if (f.length > 0) { lists.followers = f; saveToStorage(); }
+      } catch(e) { console.warn('Seed followers failed:', e); }
+    }
+
+    async function seedBitsLeaderboard() {
+      try {
+        const res = await fetch(TWITCH_API + '/bits/leaderboard?count=' + T.maxEntries, { headers: twitchHeaders() });
+        const data = await res.json();
+        const b = (data.data || []).map(b => ({ name: b.user_name, detail: b.score.toLocaleString() + ' bits' }));
+        if (b.length > 0) { lists.cheers = b; saveToStorage(); }
+      } catch(e) { console.warn('Seed bits failed:', e); }
+    }
+
+    /* ---- Extra Life API ---- */
+    async function fetchExtraLifeDonations() {
+      if (!C.extraLife || !C.extraLife.enabled) return;
+      try {
+        const res = await fetch(EXTRALIFE_API + '/participants/' + C.extraLife.participantId + '/donations?limit=' + T.maxEntries + '&orderBy=createdDateUTC%20DESC');
+        const data = await res.json();
+        const d = (data || []).map(d => ({ name: d.displayName || 'Anonymous', detail: d.amount ? '$' + d.amount.toFixed(2) : '' }));
+        if (d.length > 0) lists.extralife = d;
+      } catch(e) { console.warn('Extra Life fetch failed:', e); }
+    }
+
+    /* ---- Streamlabs Socket ---- */
+    function connectStreamlabsSocket() {
+      if (!C.streamlabsToken) return;
+      const dot = document.getElementById('connection-dot');
+      const socket = io('https://sockets.streamlabs.com', { query: { token: C.streamlabsToken }, transports: ['websocket'] });
+      socket.on('connect', () => { dot.className = 'connected'; });
+      socket.on('disconnect', () => { dot.className = 'disconnected'; });
+      socket.on('event', (evt) => {
+        if (!evt || !evt.message) return;
+        const msgs = Array.isArray(evt.message) ? evt.message : [evt.message];
+        switch (evt.type) {
+          case 'follow':
+            msgs.forEach(m => prependToList('followers', { name: m.name || m.from || 'Unknown', detail: '' }));
+            break;
+          case 'subscription': case 'resub':
+            msgs.forEach(m => {
+              const tier = m.sub_plan ? 'T' + parseInt(m.sub_plan)/1000 : '';
+              const months = m.months ? m.months + 'mo' : '';
+              prependToList('subscribers', { name: m.name || m.from || 'Unknown', detail: [tier, months].filter(Boolean).join(' ') });
+            });
+            break;
+          case 'bits':
+            msgs.forEach(m => {
+              const amt = m.amount || m.bits || 0;
+              prependToList('cheers', { name: m.name || m.from || 'Unknown', detail: amt ? Number(amt).toLocaleString() + ' bits' : '' });
+            });
+            break;
+          case 'donation':
+            msgs.forEach(m => prependToList('extralife', { name: m.name || m.from || 'Anonymous', detail: m.amount ? '$' + parseFloat(m.amount).toFixed(2) : '' }));
+            break;
+        }
+      });
+    }
+
+    /* ---- Rendering ---- */
+    function getDisplayEntries(key) {
+      return lists[key].length > 0 ? lists[key] : [{ name: 'Be the first!', detail: '' }];
+    }
+
+    function buildScrollContent(entries) {
+      const c = document.getElementById('scroll-content');
+      c.innerHTML = '';
+      entries.forEach((entry, i) => {
+        if (i > 0) { const sep = document.createElement('span'); sep.className = 'entry-separator'; sep.textContent = '•'; c.appendChild(sep); }
+        const el = document.createElement('span'); el.className = 'entry';
+        const rank = document.createElement('span'); rank.className = 'entry-rank'; rank.textContent = (i+1) + '.';
+        const name = document.createElement('span'); name.className = 'entry-name'; name.textContent = entry.name;
+        el.appendChild(rank); el.appendChild(name);
+        if (entry.detail) { const d = document.createElement('span'); d.className = 'entry-detail'; d.textContent = '(' + entry.detail + ')'; el.appendChild(d); }
+        c.appendChild(el);
+      });
+    }
+
+    function updateCategoryLabel(text) {
+      const l = document.getElementById('category-label');
+      l.textContent = text; l.classList.remove('fade-in'); void l.offsetWidth; l.classList.add('fade-in');
+    }
+
+    /* ---- Scroll Animation ---- */
+    function startScroll(onComplete) {
+      const area = document.getElementById('scroll-area');
+      const content = document.getElementById('scroll-content');
+      cancelAnimationFrame(scrollAnimationId);
+      const areaW = area.offsetWidth, contentW = content.offsetWidth;
+      let posX = areaW;
+      content.style.transform = 'translateX(' + posX + 'px)';
+      const total = areaW + contentW;
+      const dur = (total / T.scrollSpeed) * 1000;
+      const start = performance.now();
+      function animate(now) {
+        const p = Math.min((now - start) / dur, 1);
+        content.style.transform = 'translateX(' + (areaW - p * total) + 'px)';
+        if (p < 1) scrollAnimationId = requestAnimationFrame(animate);
+        else onComplete();
+      }
+      scrollAnimationId = requestAnimationFrame(animate);
+    }
+
+    /* ---- Rotation ---- */
+    function showNextCategory() {
+      const cat = CATEGORY_MAP[currentCategoryIndex];
+      updateCategoryLabel(cat.label);
+      buildScrollContent(getDisplayEntries(cat.key));
+      startScroll(() => {
+        currentCategoryIndex = (currentCategoryIndex + 1) % CATEGORY_MAP.length;
+        setTimeout(showNextCategory, T.pauseBetweenMs);
+      });
+    }
+
+    /* ---- Init ---- */
+    async function init() {
+      loadFromStorage();
+      await Promise.all([seedFollowers(), seedBitsLeaderboard(), fetchExtraLifeDonations()]);
+      connectStreamlabsSocket();
+      currentCategoryIndex = 0;
+      showNextCategory();
+      if (C.extraLife && C.extraLife.enabled) setInterval(fetchExtraLifeDonations, 3 * 60 * 1000);
+    }
+    init();
+  </script>
+
+</body>
+</html>

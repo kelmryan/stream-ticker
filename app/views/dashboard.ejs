@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Stream Ticker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* --- Header --- */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #111;
+      border-bottom: 1px solid #222;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFD700;
+    }
+
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    .header-name {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .header-logout {
+      color: #666;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .header-logout:hover {
+      color: #fff;
+    }
+
+    /* --- Layout --- */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    /* --- Sections --- */
+    .section {
+      background: #141414;
+      border: 1px solid #222;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #FFD700;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* --- URL Display --- */
+    .url-group {
+      margin-bottom: 16px;
+    }
+
+    .url-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .url-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-input {
+      flex-grow: 1;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #ccc;
+      font-family: monospace;
+      font-size: 13px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .url-input:focus {
+      border-color: #FFD700;
+    }
+
+    .btn-copy {
+      background: #222;
+      border: 1px solid #333;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover { background: #333; }
+    .btn-copy.copied { background: #2d6b2d; border-color: #3a8a3a; }
+
+    /* --- Form fields --- */
+    .field-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #ccc;
+      min-width: 160px;
+    }
+
+    .field-input {
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      width: 200px;
+    }
+
+    .field-input:focus { border-color: #FFD700; }
+
+    .field-color {
+      width: 40px;
+      height: 34px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: none;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .field-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: #FFD700;
+    }
+
+    .field-hint {
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* --- Buttons --- */
+    .btn-save {
+      background: linear-gradient(135deg, #FFD700, #DAA520);
+      color: #000;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .btn-save:hover { transform: translateY(-1px); }
+    .btn-save:active { transform: translateY(0); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-regen {
+      background: none;
+      border: 1px solid #444;
+      color: #aaa;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-regen:hover { border-color: #ff4444; color: #ff4444; }
+
+    .status-msg {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .status-msg.show { opacity: 1; }
+    .status-msg.success { color: #4CAF50; }
+    .status-msg.error { color: #ff4444; }
+
+    /* --- Separator --- */
+    .sep {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <span class="header-logo">Stream Ticker</span>
+    </div>
+    <div class="header-user">
+      <% if (user.avatar) { %>
+        <img class="header-avatar" src="<%= user.avatar %>" alt="">
+      <% } %>
+      <span class="header-name"><%= user.display || user.login %></span>
+      <a href="/auth/logout" class="header-logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Browser Source URLs -->
+    <div class="section">
+      <div class="section-title">Your Browser Source URLs</div>
+      <p style="font-size: 13px; color: #888; margin-bottom: 16px;">
+        Add these as Browser Sources in Streamlabs (Local File off, width 1920, height 1080).
+      </p>
+
+      <div class="url-group">
+        <div class="url-label">Ticker</div>
+        <div class="url-row">
+          <input class="url-input" id="ticker-url" type="text"
+            value="<%= appUrl %>/ticker/<%= settings.api_key %>" readonly>
+          <button class="btn-copy" onclick="copyUrl('ticker-url', this)">Copy</button>
+        </div>
+      </div>
+
+      <div class="url-group" id="overlay-url-group" style="display: <%= settings.extralife_enabled ? 'block' : 'none' %>">
+        <div class="url-label">Extra Life Overlay</div>
+        <div class="url-row">
+          <input class="url-input" id="overlay-url" type="text"
+            value="<%= appUrl %>/overlay/<%= settings.api_key %>" readonly>
+          <button class="btn-copy" onclick="copyUrl('overlay-url', this)">Copy</button>
+        </div>
+      </div>
+
+      <button class="btn-regen" onclick="regenerateKey()">
+        Regenerate URLs (invalidates old ones)
+      </button>
+    </div>
+
+    <!-- Streamlabs Socket -->
+    <div class="section">
+      <div class="section-title">Streamlabs Connection</div>
+      <p style="font-size: 13px; color: #888; margin-bottom: 16px;">
+        Paste your Streamlabs Socket API Token to get real-time follow, sub, and cheer events.
+        Find it at <a href="https://streamlabs.com/dashboard#/settings/api-settings" target="_blank" style="color: #FFD700;">Streamlabs Dashboard → API Settings</a>.
+      </p>
+      <div class="field-row">
+        <label class="field-label">Socket Token</label>
+        <input class="field-input" id="streamlabs_token" type="password"
+          style="width: 100%; max-width: 400px;"
+          placeholder="<%= settings.has_streamlabs_token ? '••••••••••• (saved)' : 'Paste token here' %>">
+      </div>
+    </div>
+
+    <!-- Extra Life -->
+    <div class="section">
+      <div class="section-title">Extra Life</div>
+      <div class="field-row">
+        <label class="field-label">Enable Extra Life</label>
+        <input class="field-checkbox" id="extralife_enabled" type="checkbox"
+          <%= settings.extralife_enabled ? 'checked' : '' %>>
+      </div>
+      <div class="field-row">
+        <label class="field-label">Participant ID</label>
+        <input class="field-input" id="extralife_participant_id" type="text"
+          value="<%= settings.extralife_participant_id || '' %>"
+          placeholder="e.g. 579835">
+      </div>
+      <p class="field-hint" style="margin-left: 172px;">
+        The number in your Extra Life URL: extra-life.org/participant/<strong>XXXXXX</strong>
+      </p>
+    </div>
+
+    <!-- Ticker Appearance -->
+    <div class="section">
+      <div class="section-title">Ticker Appearance</div>
+
+      <div class="field-row">
+        <label class="field-label">Accent Color</label>
+        <input class="field-color" id="accent_color" type="color"
+          value="<%= settings.accent_color || '#FFD700' %>">
+        <input class="field-input" id="accent_color_text" type="text"
+          value="<%= settings.accent_color || '#FFD700' %>" style="width: 100px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Accent Dark</label>
+        <input class="field-color" id="accent_color_dark" type="color"
+          value="<%= settings.accent_color_dark || '#DAA520' %>">
+        <input class="field-input" id="accent_color_dark_text" type="text"
+          value="<%= settings.accent_color_dark || '#DAA520' %>" style="width: 100px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Background</label>
+        <input class="field-color" id="bg_color" type="color"
+          value="<%= settings.bg_color || '#0d0d0d' %>">
+        <input class="field-input" id="bg_color_text" type="text"
+          value="<%= settings.bg_color || '#0d0d0d' %>" style="width: 100px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Text Color</label>
+        <input class="field-color" id="text_color" type="color"
+          value="<%= settings.text_color || '#FFFFFF' %>">
+        <input class="field-input" id="text_color_text" type="text"
+          value="<%= settings.text_color || '#FFFFFF' %>" style="width: 100px;">
+      </div>
+
+      <hr class="sep">
+
+      <div class="field-row">
+        <label class="field-label">Bar Height (px)</label>
+        <input class="field-input" id="bar_height" type="number"
+          value="<%= settings.bar_height || 56 %>" style="width: 80px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Name Font Size</label>
+        <input class="field-input" id="font_size_name" type="number"
+          value="<%= settings.font_size_name || 17 %>" style="width: 80px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Scroll Speed (px/sec)</label>
+        <input class="field-input" id="scroll_speed" type="number"
+          value="<%= settings.scroll_speed || 90 %>" style="width: 80px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Max Entries</label>
+        <input class="field-input" id="max_entries" type="number"
+          value="<%= settings.max_entries || 10 %>" style="width: 80px;">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Show Connection Dot</label>
+        <input class="field-checkbox" id="show_connection_dot" type="checkbox"
+          <%= settings.show_connection_dot ? 'checked' : '' %>>
+      </div>
+    </div>
+
+    <!-- Overlay Timing -->
+    <div class="section" id="overlay-timing-section"
+      style="display: <%= settings.extralife_enabled ? 'block' : 'none' %>">
+      <div class="section-title">Overlay Timing</div>
+      <div class="field-row">
+        <label class="field-label">Overlay Duration (sec)</label>
+        <input class="field-input" id="overlay_show_sec" type="number"
+          value="<%= settings.overlay_show_sec || 60 %>" style="width: 80px;">
+      </div>
+      <div class="field-row">
+        <label class="field-label">QR Page Duration (sec)</label>
+        <input class="field-input" id="qr_page_show_sec" type="number"
+          value="<%= settings.qr_page_show_sec || 60 %>" style="width: 80px;">
+      </div>
+      <div class="field-row">
+        <label class="field-label">Hide Duration (min)</label>
+        <input class="field-input" id="hide_duration_min" type="number"
+          value="<%= settings.hide_duration_min || 5 %>" style="width: 80px;">
+      </div>
+    </div>
+
+    <!-- Save -->
+    <button class="btn-save" id="save-btn" onclick="saveSettings()">Save Settings</button>
+    <span class="status-msg" id="status-msg"></span>
+
+  </div>
+
+  <script>
+    /* ---- Color picker sync ---- */
+    document.querySelectorAll('.field-color').forEach((picker) => {
+      const textInput = document.getElementById(picker.id + '_text');
+      if (!textInput) return;
+      picker.addEventListener('input', () => { textInput.value = picker.value; });
+      textInput.addEventListener('input', () => { picker.value = textInput.value; });
+    });
+
+    /* ---- Toggle Extra Life sections ---- */
+    document.getElementById('extralife_enabled').addEventListener('change', function () {
+      const show = this.checked ? 'block' : 'none';
+      document.getElementById('overlay-url-group').style.display = show;
+      document.getElementById('overlay-timing-section').style.display = show;
+    });
+
+    /* ---- Copy URL ---- */
+    function copyUrl(inputId, btn) {
+      const input = document.getElementById(inputId);
+      navigator.clipboard.writeText(input.value);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    /* ---- Save settings ---- */
+    async function saveSettings() {
+      const btn = document.getElementById('save-btn');
+      const msg = document.getElementById('status-msg');
+      btn.disabled = true;
+
+      const body = {
+        extralife_enabled: document.getElementById('extralife_enabled').checked,
+        extralife_participant_id: document.getElementById('extralife_participant_id').value,
+        accent_color: document.getElementById('accent_color').value,
+        accent_color_dark: document.getElementById('accent_color_dark').value,
+        bg_color: document.getElementById('bg_color').value,
+        text_color: document.getElementById('text_color').value,
+        bar_height: parseInt(document.getElementById('bar_height').value),
+        font_size_name: parseInt(document.getElementById('font_size_name').value),
+        scroll_speed: parseInt(document.getElementById('scroll_speed').value),
+        max_entries: parseInt(document.getElementById('max_entries').value),
+        show_connection_dot: document.getElementById('show_connection_dot').checked,
+        overlay_show_sec: parseInt(document.getElementById('overlay_show_sec').value),
+        qr_page_show_sec: parseInt(document.getElementById('qr_page_show_sec').value),
+        hide_duration_min: parseInt(document.getElementById('hide_duration_min').value),
+      };
+
+      /* Only send Streamlabs token if user typed something new */
+      const slToken = document.getElementById('streamlabs_token').value;
+      if (slToken && !slToken.startsWith('•')) {
+        body.streamlabs_token = slToken;
+      }
+
+      try {
+        const res = await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          showStatus('Saved!', 'success');
+        } else {
+          showStatus('Save failed', 'error');
+        }
+      } catch (e) {
+        showStatus('Network error', 'error');
+      }
+
+      btn.disabled = false;
+    }
+
+    /* ---- Regenerate API key ---- */
+    async function regenerateKey() {
+      if (!confirm('This will invalidate your current Browser Source URLs. Continue?')) return;
+
+      try {
+        const res = await fetch('/api/settings/regenerate-key', { method: 'POST' });
+        if (res.ok) {
+          location.reload();
+        } else {
+          showStatus('Failed to regenerate', 'error');
+        }
+      } catch (e) {
+        showStatus('Network error', 'error');
+      }
+    }
+
+    /* ---- Status message ---- */
+    function showStatus(text, type) {
+      const msg = document.getElementById('status-msg');
+      msg.textContent = text;
+      msg.className = 'status-msg show ' + type;
+      setTimeout(() => { msg.classList.remove('show'); }, 3000);
+    }
+  </script>
+
+</body>
+</html>

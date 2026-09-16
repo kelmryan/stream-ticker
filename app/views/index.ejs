@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Ticker — ESPN-Style Ticker for Your Stream</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero {
+      text-align: center;
+      max-width: 640px;
+      padding: 40px 20px;
+    }
+
+    .logo {
+      font-size: 48px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #FFD700, #DAA520);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 18px;
+      color: #999;
+      font-weight: 400;
+      margin-bottom: 40px;
+    }
+
+    .features {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .feature {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 20px;
+      width: 180px;
+      text-align: center;
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .feature-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #FFD700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.4;
+    }
+
+    .login-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #9146FF;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .login-btn:hover {
+      background: #7B2FFF;
+      transform: translateY(-1px);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .login-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: #fff;
+    }
+
+    .note {
+      margin-top: 24px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .preview-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 48px;
+      background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+      border-top: 2px solid #FFD700;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .preview-label {
+      flex-shrink: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      background: linear-gradient(135deg, #FFD700, #DAA520);
+      color: #000;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+    }
+
+    .preview-label::after {
+      content: '';
+      position: absolute;
+      right: -14px;
+      top: 0;
+      border-top: 24px solid transparent;
+      border-bottom: 24px solid transparent;
+      border-left: 14px solid #DAA520;
+    }
+
+    .preview-scroll {
+      flex-grow: 1;
+      overflow: hidden;
+      margin-left: 8px;
+    }
+
+    .preview-text {
+      display: inline-block;
+      white-space: nowrap;
+      color: #888;
+      font-size: 13px;
+      font-weight: 600;
+      animation: scroll 20s linear infinite;
+    }
+
+    @keyframes scroll {
+      0%   { transform: translateX(100vw); }
+      100% { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="logo">Stream Ticker</div>
+    <div class="tagline">An ESPN-style scrolling ticker for your Twitch stream</div>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📡</div>
+        <div class="feature-title">Live Data</div>
+        <div class="feature-desc">Followers, subs, cheers update in real-time</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Customizable</div>
+        <div class="feature-desc">Colors, fonts, speed — make it yours</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">💚</div>
+        <div class="feature-title">Extra Life</div>
+        <div class="feature-desc">Show donations with a QR code overlay</div>
+      </div>
+    </div>
+
+    <a href="/auth/twitch" class="login-btn">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z"/>
+      </svg>
+      Login with Twitch
+    </a>
+
+    <div class="note">Free to use. We only request the permissions needed for the ticker.</div>
+  </div>
+
+  <!-- Decorative preview ticker -->
+  <div class="preview-bar">
+    <div class="preview-label">PREVIEW</div>
+    <div class="preview-scroll">
+      <span class="preview-text">
+        1. YourFollower42 • 2. StreamFan99 • 3. TwitchLurker • 4. HypeTrain_Mike • 5. GG_Rachel — Login to see your real data here!
+      </span>
+    </div>
+  </div>
+
+</body>
+</html>
