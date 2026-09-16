@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extra Life Overlay Cycler</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script src="config.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+
+    .phase {
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      transition: opacity 0.6s ease-in-out;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .phase.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #overlay-frame {
+      border: none;
+    }
+
+    #qr-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at center, #1a1a1a 0%, #000000 70%);
+    }
+
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .qr-heading {
+      color: #FFD700;
+      font-size: 42px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .qr-subheading {
+      color: #FFFFFF;
+      font-size: 20px;
+      font-weight: 600;
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    .qr-code-wrapper {
+      background: #FFFFFF;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow:
+        0 0 30px rgba(255, 215, 0, 0.25),
+        0 4px 20px rgba(0, 0, 0, 0.5);
+      border: 3px solid #FFD700;
+      animation: softPulse 3s ease-in-out infinite;
+    }
+
+    .qr-code-wrapper canvas,
+    .qr-code-wrapper img {
+      display: block;
+    }
+
+    .qr-url {
+      color: #AAA;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .qr-badge-text {
+      color: #FFD700;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    @keyframes softPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.5); }
+      50%      { box-shadow: 0 0 45px rgba(255, 215, 0, 0.45), 0 4px 20px rgba(0, 0, 0, 0.5); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Phase 1: Extra Life Donation Overlay -->
+  <iframe id="overlay-frame" class="phase"></iframe>
+
+  <!-- Phase 2: Scan to Donate QR Page -->
+  <div id="qr-page" class="phase">
+    <div class="qr-container">
+      <div class="qr-heading">Scan to Donate</div>
+      <div class="qr-subheading">Help us change kids' lives — every dollar counts!</div>
+      <div class="qr-code-wrapper">
+        <div id="qr-code"></div>
+      </div>
+      <div class="qr-url">extra-life.org</div>
+      <div class="qr-extra-life-badge">
+        <span class="qr-badge-text">★ Extra Life — For the Kids ★</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const EL = TOOLKIT_CONFIG.extraLife;
+    const OV = TOOLKIT_CONFIG.overlay;
+
+    const DONATE_URL =
+      `https://www.extra-life.org/index.cfm?fuseaction=donorDrive.participant&participantID=${EL.participantId}`;
+    const OVERLAY_SRC =
+      `https://dd.extra-life.org/index.cfm?fuseaction=donorDrive.streamingOverlay&eventID=562&participantID=${EL.participantId}`;
+
+    const OVERLAY_MS = OV.overlayShowSec * 1000;
+    const QR_MS      = OV.qrPageShowSec  * 1000;
+    const HIDE_MS    = OV.hideDurationMin * 60 * 1000;
+
+    const overlayFrame = document.getElementById('overlay-frame');
+    const qrPage       = document.getElementById('qr-page');
+
+    /* Set iframe source from config */
+    overlayFrame.src = OVERLAY_SRC;
+
+    /* Generate QR code */
+    function generateQRCode() {
+      const qr = qrcode(0, 'M');
+      qr.addData(DONATE_URL);
+      qr.make();
+      const container = document.getElementById('qr-code');
+      container.innerHTML = qr.createSvgTag({
+        cellSize: 5, margin: 0, scalable: true,
+      });
+      const svg = container.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('width', '250');
+        svg.setAttribute('height', '250');
+      }
+    }
+
+    /* Phase transitions */
+    function showEl(el)  { el.classList.add('visible'); }
+    function hideEl(el)  { el.classList.remove('visible'); }
+
+    function phaseOverlay() {
+      showEl(overlayFrame);
+      setTimeout(phaseQR, OVERLAY_MS);
+    }
+
+    function phaseQR() {
+      hideEl(overlayFrame);
+      setTimeout(() => {
+        showEl(qrPage);
+        setTimeout(phaseHide, QR_MS);
+      }, 600);
+    }
+
+    function phaseHide() {
+      hideEl(qrPage);
+      setTimeout(phaseOverlay, HIDE_MS);
+    }
+
+    generateQRCode();
+    phaseOverlay();
+  </script>
+
+</body>
+</html>
