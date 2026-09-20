@@ -23,6 +23,7 @@ router.get('/twitch', (req, res) => {
 router.get('/twitch/callback', async (req, res) => {
   try {
     const { code, state } = req.query;
+    console.log('Callback hit. State:', state, 'Session state:', req.session.oauthState);
 
     if (!state || state !== req.session.oauthState) {
       return res.status(403).send('Invalid OAuth state');

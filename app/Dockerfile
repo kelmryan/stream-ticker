@@ -11,4 +11,4 @@ EXPOSE 3000
 
 USER node
 
-CMD ["node", "test-server"]
+CMD ["node", "server/index.js"]
