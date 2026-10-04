@@ -9,6 +9,7 @@ const { pool } = require('./db');
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 const tickerRoutes = require('./routes/ticker');
+const extensionRoutes = require('./routes/extension');
 const { requireAuth } = require('./middleware/auth');
 
 const app = express();
@@ -22,6 +23,14 @@ app.get('/health', (req, res) => {
 });
 /* Debug: confirm server is ready */
 console.log('Express app configured, health endpoint registered');
+
+/* Twitch Extension backend — also before session middleware, since every
+   viewer polls it and none of them should get a session row */
+app.use(
+  '/ext',
+  helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }),
+  extensionRoutes
+);
 /* -------------------------------------------------------
    Middleware
    ------------------------------------------------------- */
@@ -33,10 +42,10 @@ app.use(
   session({
     store: new PgSession({ pool, createTableIfMissing: true }),
     secret: config.sessionSecret,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
-      secure: config.nodeEnv === 'production',
+      secure: false,
       httpOnly: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -80,6 +89,18 @@ app.get('/dashboard', requireAuth, async (req, res) => {
     },
     settings: rows[0],
     appUrl: config.appUrl,
+  });
+});
+/* Admin stats (protect this later) */
+app.get('/admin/stats', async (req, res) => {
+  const db = require('./db');
+  const users = await db.query('SELECT COUNT(*) FROM users');
+  const recent = await db.query(
+    'SELECT twitch_login, created_at FROM users ORDER BY created_at DESC LIMIT 10'
+  );
+  res.json({
+    totalUsers: users.rows[0].count,
+    recentSignups: recent.rows,
   });
 });
 

@@ -1,0 +1,142 @@
+/* Sizes are driven by CSS variables set from the broadcaster's dashboard
+   settings in overlay.js, scaled to the player size. */
+:root {
+  --scale: 1;
+  --bar-h: 56px;
+  --accent: #FFD700;
+  --accent-dark: #DAA520;
+  --bg: #0d0d0d;
+  --bg-light: #1a1a1a;
+  --text: #FFFFFF;
+  --detail: #AAAAAA;
+  --separator: #555555;
+  --fs-label: 16px;
+  --fs-rank: 16px;
+  --fs-name: 17px;
+  --fs-detail: 14px;
+  --controls-offset: 0px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+.hidden { display: none !important; }
+
+#ticker {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--controls-offset);
+  transition: bottom 0.2s ease;
+}
+
+#ticker-bar {
+  height: var(--bar-h);
+  background: linear-gradient(180deg, var(--bg-light) 0%, var(--bg) 100%);
+  border-top: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+#category-label {
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 calc(16px * var(--scale));
+  min-width: calc(200px * var(--scale));
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: #000;
+  font-size: var(--fs-label);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+}
+
+#category-label::after {
+  content: '';
+  position: absolute;
+  right: calc(-16px * var(--scale));
+  top: 0;
+  border-top: calc(var(--bar-h) / 2) solid transparent;
+  border-bottom: calc(var(--bar-h) / 2) solid transparent;
+  border-left: calc(16px * var(--scale)) solid var(--accent-dark);
+}
+
+#scroll-area {
+  flex-grow: 1;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  margin-left: calc(8px * var(--scale));
+}
+
+#scroll-content {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: absolute;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.entry { display: inline-flex; align-items: center; margin-right: 12px; height: 100%; }
+.entry-rank { color: var(--accent); font-size: var(--fs-rank); font-weight: 800; margin-right: 4px; }
+.entry-name { color: var(--text); font-size: var(--fs-name); font-weight: 600; }
+.entry-detail { color: var(--detail); font-size: var(--fs-detail); font-weight: 600; margin-left: 4px; }
+.entry-separator { color: var(--separator); font-size: var(--fs-name); margin: 0 10px; }
+
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Viewer controls — only visible on hover so they don't clutter the stream */
+#hide-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 16px;
+  line-height: 24px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 3;
+}
+#ticker:hover #hide-btn,
+#hide-btn:focus-visible { opacity: 1; }
+
+#show-btn {
+  position: fixed;
+  right: 10px;
+  bottom: calc(var(--controls-offset) + 10px);
+  padding: 4px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  color: var(--accent);
+  font: 600 12px 'Inter', 'Segoe UI', Roboto, Arial, sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, bottom 0.2s ease;
+}
+body:hover #show-btn,
+#show-btn:focus-visible { opacity: 1; }

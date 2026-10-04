@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Ticker — Configuration</title>
+  <link rel="stylesheet" href="config.css">
+</head>
+<body>
+  <main>
+    <h1>Stream Ticker</h1>
+    <p class="lede">An ESPN-style ticker of your latest followers, subscribers, top cheers and Extra Life donations, shown over your video.</p>
+
+    <section id="loading">Checking your account…</section>
+
+    <section id="linked" class="hidden">
+      <p class="status ok">✓ Connected as <strong id="linked-name"></strong></p>
+      <p>Colors, sizes, scroll speed and Extra Life are set on your dashboard. Changes show up for viewers within a minute.</p>
+      <a id="dashboard-link" class="button" target="_blank" rel="noopener noreferrer">Open dashboard</a>
+    </section>
+
+    <section id="unlinked" class="hidden">
+      <p class="status warn">One more step: connect your Twitch account.</p>
+      <p>The ticker needs read access to your followers, subscribers and bits leaderboard. Sign in once, then come back here and refresh this page.</p>
+      <a id="signup-link" class="button" target="_blank" rel="noopener noreferrer">Connect with Twitch</a>
+    </section>
+
+    <section id="error" class="hidden">
+      <p class="status warn">Couldn't reach the Stream Ticker server. Refresh to try again.</p>
+    </section>
+  </main>
+
+  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  <script src="ebs-url.js"></script>
+  <script src="config-page.js"></script>
+</body>
+</html>

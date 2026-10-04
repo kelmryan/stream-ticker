@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stream Ticker</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+
+  <div id="ticker" class="hidden">
+    <div id="ticker-bar">
+      <div id="category-label"></div>
+      <div id="scroll-area">
+        <div id="scroll-content"></div>
+      </div>
+      <button id="hide-btn" type="button" title="Hide ticker" aria-label="Hide ticker">&times;</button>
+    </div>
+  </div>
+
+  <button id="show-btn" type="button" class="hidden" title="Show ticker">Show ticker</button>
+
+  <script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>
+  <script src="ebs-url.js"></script>
+  <script src="overlay.js"></script>
+</body>
+</html>

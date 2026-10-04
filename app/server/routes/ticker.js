@@ -1,7 +1,7 @@
 const { Router } = require('express');
 const db = require('../db');
 const { decrypt } = require('../services/encryption');
-const twitch = require('../services/twitch');
+const { getFreshToken } = require('../services/tokens');
 const config = require('../config');
 
 const router = Router();
@@ -19,39 +19,6 @@ async function resolveApiKey(apiKey) {
     [apiKey]
   );
   return rows[0] || null;
-}
-
-/* -------------------------------------------------------
-   Helper: get a fresh access token, refreshing if needed
-   ------------------------------------------------------- */
-async function getFreshToken(record) {
-  const expiresAt = new Date(record.token_expires_at);
-  const now = new Date();
-
-  if (expiresAt > now) {
-    return decrypt(record.access_token);
-  }
-
-  /* Token expired — refresh it */
-  const refreshToken = decrypt(record.refresh_token);
-  const tokens = await twitch.refreshAccessToken(refreshToken);
-  const newExpiry = new Date(Date.now() + tokens.expires_in * 1000);
-
-  const { encrypt } = require('../services/encryption');
-  await db.query(
-    `UPDATE users SET
-       access_token = $1, refresh_token = $2,
-       token_expires_at = $3, updated_at = NOW()
-     WHERE id = $4`,
-    [
-      encrypt(tokens.access_token),
-      encrypt(tokens.refresh_token),
-      newExpiry.toISOString(),
-      record.user_id,
-    ]
-  );
-
-  return tokens.access_token;
 }
 
 /* -------------------------------------------------------
