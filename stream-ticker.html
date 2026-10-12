@@ -327,7 +327,8 @@
       if (!C.extraLife.enabled) return;
       try {
         const res = await fetch(
-          `${EXTRALIFE_API}/participants/${C.extraLife.participantId}/donations?limit=${T.maxEntries}&orderBy=createdDateUTC%20DESC`
+          `${EXTRALIFE_API}/participants/${C.extraLife.participantId}/donations?limit=${T.maxEntries}&orderBy=createdDateUTC%20DESC`,
+          { cache: 'no-store' } /* Extra Life sends max-age=14400; skip the browser cache */
         );
         const data = await res.json();
         const fetched = (data || []).map((d) => ({

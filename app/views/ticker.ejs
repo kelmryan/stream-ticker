@@ -161,7 +161,8 @@
     async function fetchExtraLifeDonations() {
       if (!C.extraLife || !C.extraLife.enabled) return;
       try {
-        const res = await fetch(EXTRALIFE_API + '/participants/' + C.extraLife.participantId + '/donations?limit=' + T.maxEntries + '&orderBy=createdDateUTC%20DESC');
+        const res = await fetch(EXTRALIFE_API + '/participants/' + C.extraLife.participantId + '/donations?limit=' + T.maxEntries + '&orderBy=createdDateUTC%20DESC',
+          { cache: 'no-store' } /* Extra Life sends max-age=14400; skip the browser cache */);
         const data = await res.json();
         const d = (data || []).map(d => ({ name: d.displayName || 'Anonymous', detail: d.amount ? '$' + d.amount.toFixed(2) : '' }));
         if (d.length > 0) lists.extralife = d;
