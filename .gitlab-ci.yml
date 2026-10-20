@@ -1,0 +1,80 @@
+# -------------------------------------------------------
+# Stream Ticker CI
+#
+# test:    unit tests, extension check, smoke test against Postgres
+# package: Twitch Extension upload zip (download it from the job's artifacts)
+# build:   Docker image build for the app (checks the Dockerfile; doesn't push)
+#
+# Every job runs the same command you can run locally. See TESTING.md.
+# -------------------------------------------------------
+stages:
+  - test
+  - package
+  - build
+
+default:
+  image: node:20
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+.npm-cache:
+  cache:
+    key:
+      files:
+        - app/package-lock.json
+    paths:
+      - .npm/
+
+unit-tests:
+  stage: test
+  extends: .npm-cache
+  script:
+    - cd app
+    - npm ci
+    - npm test
+
+extension-check:
+  stage: test
+  script:
+    - node ci/validate-extension.js
+
+smoke-test:
+  stage: test
+  extends: .npm-cache
+  services:
+    - name: postgres:16-alpine
+      alias: postgres
+  variables:
+    # These configure the Postgres service as well as the job
+    POSTGRES_USER: ticker
+    POSTGRES_PASSWORD: ticker
+    POSTGRES_DB: stream_ticker
+    DATABASE_URL: postgresql://ticker:ticker@postgres:5432/stream_ticker
+  script:
+    - bash ci/smoke-test.sh
+
+extension-zip:
+  stage: package
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq zip >/dev/null
+  script:
+    - node ci/validate-extension.js --zip
+  artifacts:
+    name: stream-ticker-extension-$CI_COMMIT_SHORT_SHA
+    paths:
+      - stream-ticker-extension.zip
+    expire_in: 30 days
+
+docker-build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  script:
+    - docker build -t stream-ticker-app:$CI_COMMIT_SHORT_SHA app
+  rules:
+    - changes:
+        - app/**/*

@@ -1,2 +1,5 @@
 /config.js
 notes_on_aws_login.md
+
+# GitLab CI npm cache
+.npm/
