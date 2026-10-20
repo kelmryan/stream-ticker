@@ -15,18 +15,28 @@
 
     <section id="linked" class="hidden">
       <p class="status ok">✓ Connected as <strong id="linked-name"></strong></p>
-      <p>Colors, sizes, scroll speed and Extra Life are set on your dashboard. Changes show up for viewers within a minute.</p>
+      <p>You're set up. To show the ticker:</p>
+      <ol>
+        <li>Go to <strong>Extensions → My Extensions</strong>, click <strong>Activate</strong> on Stream Ticker and choose <strong>Set as Overlay 1</strong>.</li>
+        <li>Go live (or watch your channel). The ticker runs along the bottom of the video, cycling through Latest Followers, Latest Subscribers and Top Cheers. Empty lists show "Be the first!".</li>
+      </ol>
+      <p>Colors, sizes, scroll speed and Extra Life are optional and set on your dashboard. Changes show up for viewers within a minute.</p>
       <a id="dashboard-link" class="button" target="_blank" rel="noopener noreferrer">Open dashboard</a>
     </section>
 
     <section id="unlinked" class="hidden">
       <p class="status warn">One more step: connect your Twitch account.</p>
-      <p>The ticker needs read access to your followers, subscribers and bits leaderboard. Sign in once, then come back here and refresh this page.</p>
+      <ol>
+        <li>Click <strong>Connect with Twitch</strong> below. A new tab opens.</li>
+        <li>Approve read-only access to your followers, subscribers and bits leaderboard.</li>
+        <li>Come back to this page and refresh it. It should say "Connected as" your name.</li>
+      </ol>
       <a id="signup-link" class="button" target="_blank" rel="noopener noreferrer">Connect with Twitch</a>
     </section>
 
     <section id="error" class="hidden">
       <p class="status warn">Couldn't reach the Stream Ticker server. Refresh to try again.</p>
+      <p class="detail" id="error-detail"></p>
     </section>
   </main>
 

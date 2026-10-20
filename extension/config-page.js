@@ -15,7 +15,10 @@
       const res = await fetch(window.EBS_URL + '/ext/status', {
         headers: { Authorization: 'Bearer ' + auth.token },
       });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error('HTTP ' + res.status + (body.error ? ': ' + body.error : ''));
+      }
       const status = await res.json();
 
       if (status.linked) {
@@ -27,6 +30,9 @@
         show('unlinked');
       }
     } catch (e) {
+      /* A fetch blocked by CSP/CORS has no status, only a TypeError */
+      document.getElementById('error-detail').textContent =
+        e instanceof TypeError ? 'Network request blocked (check the URL fetching allowlist).' : e.message;
       show('error');
     }
   });

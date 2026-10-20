@@ -155,7 +155,7 @@ By default CloudFront drops the `Authorization` header and rejects `OPTIONS` (CO
 #### 4. Upload and test
 ```bash
 cd extension
-zip -r ../stream-ticker-extension.zip . -x README.md
+zip -r ../stream-ticker-extension.zip . -x '*.md'
 ```
 1. Under **Files**, upload the zip.
 2. Move the version to **Hosted Test**.
