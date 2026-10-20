@@ -1,0 +1,91 @@
+# -------------------------------------------------------
+# Stream Ticker CI (GitHub Actions)
+#
+# Same checks as .gitlab-ci.yml. Every job runs a command
+# you can also run locally. See TESTING.md.
+# -------------------------------------------------------
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [master]
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: npm test
+        working-directory: app
+
+  extension-check:
+    name: Extension check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node ci/validate-extension.js
+
+  smoke-test:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ticker
+          POSTGRES_PASSWORD: ticker
+          POSTGRES_DB: stream_ticker
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ticker -d stream_ticker"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://ticker:ticker@localhost:5432/stream_ticker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+        working-directory: app
+      - run: bash ci/smoke-test.sh
+
+  extension-zip:
+    name: Extension zip
+    needs: extension-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node ci/validate-extension.js --zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stream-ticker-extension-${{ github.sha }}
+          path: stream-ticker-extension.zip
+          retention-days: 30
+
+  docker-build:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t stream-ticker-app:${{ github.sha }} app
